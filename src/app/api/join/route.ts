@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         <div style="background-color: #000; color: #fff; padding: 60px 20px; font-family: 'Courier New', Courier, monospace; text-align: center;">
           <div style="max-width: 600px; margin: 0 auto; border: 1px solid #333; padding: 40px; background-color: #000;">
             
-            <img src="/Email_logo.png" alt="NATITUDE" style="width: 120px; margin-bottom: 30px;" />
+            <img src="https://natitude.vercel.app/Email_logo.png" alt="NATITUDE" style="width: 120px; margin-bottom: 30px;" />
             
             <h1 style="color: #ff00ff; letter-spacing: 12px; margin-bottom: 50px; font-size: 24px; font-weight: normal; text-transform: uppercase;">
               NATITUDE
