@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 import { Resend } from 'resend';
 
-// Initialize Resend with your environment variable
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
@@ -12,7 +11,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // 1. SAVE TO DATABASE
-    const result = await db.collection("members").insertOne({
+    await db.collection("members").insertOne({
       fullName: body.fullName,
       email: body.email,
       instagram: body.instagram,
@@ -20,21 +19,31 @@ export async function POST(req: Request) {
       appliedAt: new Date(),
     });
 
-    // 2. SEND NOTIFICATION EMAIL
-    // Note: If you haven't verified a domain, you must send FROM 'onboarding@resend.dev'
-    // and TO the email you signed up with.
+    // 2. SEND NOTIFICATION TO YOU (Admin)
     await resend.emails.send({
       from: 'Natitude <onboarding@resend.dev>',
-      to: 'alex.john.norton9@gmail.com', // Replace with your actual email
+      to: 'your-email@example.com', // Your email
       subject: 'NEW TRIBE MEMBER ⚡️',
+      html: `<p><strong>${body.fullName}</strong> just joined the jungle.</p>`
+    });
+
+    // 3. SEND WELCOME TO THE USER (Success Response)
+    // NOTE: On the free tier, this only works if the user's email is verified in Resend.
+    // Once you add a custom domain, this will work for EVERYONE.
+    await resend.emails.send({
+      from: 'Natitude <onboarding@resend.dev>',
+      to: body.email, 
+      subject: 'WELCOME TO THE TRIBE 🌿',
       html: `
-        <div style="font-family: sans-serif; background: #000; color: #fff; padding: 20px; border: 1px solid #FF00FF;">
-          <h2 style="color: #FF00FF;">NEW APPLICATION</h2>
-          <p><strong>NAME:</strong> ${body.fullName}</p>
-          <p><strong>EMAIL:</strong> ${body.email}</p>
-          <p><strong>INSTAGRAM:</strong> <a href="https://instagram.com/${body.instagram.replace('@', '')}" style="color: #FF00FF;">${body.instagram}</a></p>
-          <hr style="border-color: #333;" />
-          <p style="font-size: 10px; opacity: 0.5;">ID: ${result.insertedId}</p>
+        <div style="font-family: 'Courier New', Courier, monospace; background-color: #000; color: #fff; padding: 40px; text-align: center;">
+          <h1 style="color: #FF00FF; letter-spacing: 5px;">NATITUDE</h1>
+          <p style="font-size: 18px;">Greetings, ${body.fullName}.</p>
+          <p>Your transmission has been received and encrypted into the jungle archives.</p>
+          <p>We are currently reviewing the latest batch of seekers. Watch your frequency for further instructions.</p>
+          <br />
+          <div style="border-top: 1px solid #333; padding-top: 20px;">
+            <p style="font-size: 12px; color: #666;">STAY WILD. STAY CONNECTED.</p>
+          </div>
         </div>
       `
     });
@@ -43,6 +52,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("JOIN_ERROR:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Transmission Interrupted" }, { status: 500 });
   }
 }
