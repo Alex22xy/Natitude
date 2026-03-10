@@ -1,23 +1,42 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
 
+/**
+ * NATITUDE: JOIN THE TRIBE API
+ * Handles the POST request from the Join Modal
+ */
 export async function POST(req: Request) {
   try {
     const client = await clientPromise;
-    // We explicitly tell it to use "natitude"
-    const db = client.db("natitude"); 
+    // Connects to the specific database we just created
+    const db = client.db("natitude");
+    
+    // Parse the incoming form data
     const body = await req.json();
 
-    // Now it will create "members" inside "natitude"
+    // Insert the new member into the 'members' collection
     const result = await db.collection("members").insertOne({
-      ...body,
-      appliedAt: new Date()
+      fullName: body.fullName,
+      email: body.email,
+      instagram: body.instagram,
+      status: 'pending', // Default status for new applications
+      appliedAt: new Date(),
     });
 
-    return NextResponse.json({ success: true, id: result.insertedId });
+    // Log for your Vercel dashboard logs
+    console.log(`New Tribe Member: ${body.fullName} (${result.insertedId})`);
+
+    return NextResponse.json({ 
+      success: true, 
+      message: "Transmission received. Welcome to the Tribe." 
+    });
+
   } catch (error: any) {
-    // This will help us see exactly what went wrong in the Vercel logs
-    console.error("Database error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("DATABASE_ERROR:", error.message);
+    
+    return NextResponse.json(
+      { error: "The Jungle is currently unreachable. Try again later." }, 
+      { status: 500 }
+    );
   }
 }
