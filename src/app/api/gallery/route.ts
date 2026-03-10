@@ -6,12 +6,12 @@ export async function GET() {
     const client = await clientPromise;
     const db = client.db("natitude");
     
-    // This fetches all items from the 'gallery' collection
+    // This pulls all images from your 'gallery' collection
     const gallery = await db.collection("gallery").find({}).toArray();
 
     return NextResponse.json(gallery);
-  } catch (error) {
-    console.error("Gallery Fetch Error:", error);
-    return NextResponse.json({ error: "Failed to load artifacts" }, { status: 500 });
+  } catch (error: any) {
+    console.error("GALLERY_ERROR:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
