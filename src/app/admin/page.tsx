@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 /**
  * NATITUDE COMMAND CENTER
- * Secure access point for Tribe management.
+ * Secure access point for Tribe management and Ritual updates.
  */
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,6 +12,11 @@ export default function AdminDashboard() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Ritual Event State
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventLoc, setEventLoc] = useState('');
 
   // 1. Fetch members if authenticated
   const fetchMembers = async () => {
@@ -29,11 +34,23 @@ export default function AdminDashboard() {
     }
   };
 
+  // 2. Fetch current Ritual details
+  const fetchEvent = async () => {
+    const res = await fetch('/api/admin/event');
+    if (res.ok) {
+      const data = await res.json();
+      setEventDate(data.date || '');
+      setEventTime(data.time || '');
+      setEventLoc(data.locationName || '');
+    }
+  };
+
   useEffect(() => {
     fetchMembers();
+    fetchEvent();
   }, []);
 
-  // 2. Handle Login
+  // 3. Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch('/api/admin/login', {
@@ -45,37 +62,50 @@ export default function AdminDashboard() {
     if (res.ok) {
       setIsAuthenticated(true);
       fetchMembers();
+      fetchEvent();
     } else {
       setError('ACCESS DENIED: INVALID FREQUENCY');
     }
   };
 
-  // 3. Handle Member Approval
+  // 4. Update Ritual Details
+  const updateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch('/api/admin/event', {
+      method: 'POST',
+      body: JSON.stringify({ 
+        date: eventDate, 
+        time: eventTime, 
+        locationName: eventLoc 
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (res.ok) {
+      alert("RITUAL UPDATED IN ARCHIVES");
+    } else {
+      alert("UPDATE FAILED");
+    }
+  };
+
+  // 5. Member Actions (Approve/Delete)
   const approveMember = async (id: string) => {
     const res = await fetch('/api/admin/members/approve', {
       method: 'POST',
       body: JSON.stringify({ id }),
       headers: { 'Content-Type': 'application/json' },
     });
-
-    if (res.ok) {
-      fetchMembers();
-    }
+    if (res.ok) fetchMembers();
   };
 
-  // 4. Handle Member Deletion
   const deleteMember = async (id: string) => {
     if (!confirm("Are you sure you want to delete this transmission?")) return;
-
     const res = await fetch('/api/admin/members/delete', {
       method: 'DELETE',
       body: JSON.stringify({ id }),
       headers: { 'Content-Type': 'application/json' },
     });
-
-    if (res.ok) {
-      fetchMembers();
-    }
+    if (res.ok) fetchMembers();
   };
 
   // --- LOGIN VIEW ---
@@ -109,7 +139,7 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-end border-b border-[#ff00ff] pb-4 mb-8">
           <div>
             <h1 className="text-[#ff00ff] text-3xl tracking-tighter font-bold">NATITUDE_SYSTEMS</h1>
-            <p className="text-xs opacity-50">AUTHORIZED ACCESS ONLY // TRIBE_DATABASE</p>
+            <p className="text-xs opacity-50">AUTHORIZED ACCESS ONLY // CONTROL_PANEL</p>
           </div>
           <div className="text-right">
             <p className="text-[#ff00ff]">{members.length}</p>
@@ -117,7 +147,34 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* EVENT MANAGER SECTION */}
+        <div className="mb-12 border border-zinc-800 p-6 bg-zinc-950">
+          <h2 className="text-[#ff00ff] text-xs uppercase tracking-[0.3em] mb-4 font-bold">Ritual_Control</h2>
+          <form onSubmit={updateEvent} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input 
+              type="text" placeholder="Date (e.g. 24.05.26)" 
+              value={eventDate} onChange={(e) => setEventDate(e.target.value)}
+              className="bg-black border border-zinc-700 p-2 text-xs outline-none focus:border-[#ff00ff]"
+            />
+            <input 
+              type="text" placeholder="Time (e.g. 22:00 - 04:00)" 
+              value={eventTime} onChange={(e) => setEventTime(e.target.value)}
+              className="bg-black border border-zinc-700 p-2 text-xs outline-none focus:border-[#ff00ff]"
+            />
+            <input 
+              type="text" placeholder="Location Label" 
+              value={eventLoc} onChange={(e) => setEventLoc(e.target.value)}
+              className="bg-black border border-zinc-700 p-2 text-xs outline-none focus:border-[#ff00ff]"
+            />
+            <button className="bg-white text-black text-[10px] font-bold uppercase hover:bg-[#ff00ff] transition-colors py-2">
+              Update Ritual
+            </button>
+          </form>
+        </div>
+
+        {/* TRIBE DATABASE SECTION */}
         <div className="overflow-x-auto">
+          <h2 className="text-[#ff00ff] text-xs uppercase tracking-[0.3em] mb-4 font-bold">Tribe_Archive</h2>
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 text-[10px] uppercase tracking-widest text-[#ff00ff]">
@@ -132,9 +189,7 @@ export default function AdminDashboard() {
             <tbody className="text-sm">
               {members.map((member: any) => (
                 <tr key={member._id} className="border-b border-zinc-900 hover:bg-zinc-950 transition-colors">
-                  <td className="py-4 px-2 opacity-50">
-                    {new Date(member.appliedAt).toLocaleDateString()}
-                  </td>
+                  <td className="py-4 px-2 opacity-50">{new Date(member.appliedAt).toLocaleDateString()}</td>
                   <td className="py-4 px-2 font-bold">{member.fullName}</td>
                   <td className="py-4 px-2 text-zinc-400">{member.email}</td>
                   <td className="py-4 px-2 text-[#ff00ff]">
@@ -151,9 +206,7 @@ export default function AdminDashboard() {
                         APPROVE
                       </button>
                     ) : (
-                      <span className="border border-green-500 text-green-500 px-2 py-1">
-                        APPROVED
-                      </span>
+                      <span className="border border-green-500 text-green-500 px-2 py-1">APPROVED</span>
                     )}
                   </td>
                   <td className="py-4 px-2 text-right">
