@@ -10,13 +10,15 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [members, setMembers] = useState([]);
+  const [allEvents, setAllEvents] = useState([]); // List of all events
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Ritual Event State
+  // Ritual Event Form State
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
   const [eventLoc, setEventLoc] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // 1. Fetch members if authenticated
   const fetchMembers = async () => {
@@ -34,20 +36,18 @@ export default function AdminDashboard() {
     }
   };
 
-  // 2. Fetch current Ritual details
-  const fetchEvent = async () => {
+  // 2. Fetch all Rituals from the archive
+  const fetchEvents = async () => {
     const res = await fetch('/api/admin/event');
     if (res.ok) {
       const data = await res.json();
-      setEventDate(data.date || '');
-      setEventTime(data.time || '');
-      setEventLoc(data.locationName || '');
+      setAllEvents(Array.isArray(data) ? data : []);
     }
   };
 
   useEffect(() => {
     fetchMembers();
-    fetchEvent();
+    fetchEvents();
   }, []);
 
   // 3. Handle Login
@@ -62,18 +62,19 @@ export default function AdminDashboard() {
     if (res.ok) {
       setIsAuthenticated(true);
       fetchMembers();
-      fetchEvent();
+      fetchEvents();
     } else {
       setError('ACCESS DENIED: INVALID FREQUENCY');
     }
   };
 
-  // 4. Update Ritual Details
-  const updateEvent = async (e: React.FormEvent) => {
+  // 4. Create or Update Ritual
+  const saveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch('/api/admin/event', {
       method: 'POST',
       body: JSON.stringify({ 
+        id: editingId, // If null, API creates new. If ID exists, API updates.
         date: eventDate, 
         time: eventTime, 
         locationName: eventLoc 
@@ -82,10 +83,23 @@ export default function AdminDashboard() {
     });
     
     if (res.ok) {
-      alert("RITUAL UPDATED IN ARCHIVES");
+      alert(editingId ? "TRANSMISSION UPDATED" : "NEW RITUAL LAUNCHED");
+      setEditingId(null);
+      setEventDate('');
+      setEventTime('');
+      setEventLoc('');
+      fetchEvents(); // Refresh the list
     } else {
-      alert("UPDATE FAILED");
+      alert("OPERATION FAILED");
     }
+  };
+
+  const startEdit = (event: any) => {
+    setEditingId(event._id);
+    setEventDate(event.date);
+    setEventTime(event.time);
+    setEventLoc(event.locationName);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // 5. Member Actions (Approve/Delete)
@@ -108,7 +122,6 @@ export default function AdminDashboard() {
     if (res.ok) fetchMembers();
   };
 
-  // --- LOGIN VIEW ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center font-mono p-4">
@@ -132,7 +145,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- DASHBOARD VIEW ---
   return (
     <div className="min-h-screen bg-black text-white font-mono p-6 lg:p-12">
       <div className="max-w-6xl mx-auto">
@@ -149,15 +161,17 @@ export default function AdminDashboard() {
 
         {/* EVENT MANAGER SECTION */}
         <div className="mb-12 border border-zinc-800 p-6 bg-zinc-950">
-          <h2 className="text-[#ff00ff] text-xs uppercase tracking-[0.3em] mb-4 font-bold">Ritual_Control</h2>
-          <form onSubmit={updateEvent} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <h2 className="text-[#ff00ff] text-xs uppercase tracking-[0.3em] mb-4 font-bold">
+            {editingId ? 'Edit_Transmission' : 'New_Transmission'}
+          </h2>
+          <form onSubmit={saveEvent} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <input 
-              type="text" placeholder="Date (e.g. 24.05.26)" 
+              type="text" placeholder="Date" 
               value={eventDate} onChange={(e) => setEventDate(e.target.value)}
               className="bg-black border border-zinc-700 p-2 text-xs outline-none focus:border-[#ff00ff]"
             />
             <input 
-              type="text" placeholder="Time (e.g. 22:00 - 04:00)" 
+              type="text" placeholder="Time" 
               value={eventTime} onChange={(e) => setEventTime(e.target.value)}
               className="bg-black border border-zinc-700 p-2 text-xs outline-none focus:border-[#ff00ff]"
             />
@@ -166,10 +180,26 @@ export default function AdminDashboard() {
               value={eventLoc} onChange={(e) => setEventLoc(e.target.value)}
               className="bg-black border border-zinc-700 p-2 text-xs outline-none focus:border-[#ff00ff]"
             />
-            <button className="bg-white text-black text-[10px] font-bold uppercase hover:bg-[#ff00ff] transition-colors py-2">
-              Update Ritual
+            <button className="bg-[#ff00ff] text-black text-[10px] font-bold uppercase hover:bg-white transition-colors py-2">
+              {editingId ? 'Update Ritual' : 'Launch Ritual'}
             </button>
           </form>
+
+          {/* ACTIVE RITUALS LIST */}
+          <div className="space-y-2">
+            <p className="text-[10px] text-zinc-500 uppercase mb-2">Live_Transmissions:</p>
+            {allEvents.map((ev: any) => (
+              <div key={ev._id} className="flex justify-between items-center border border-zinc-900 p-3 bg-black hover:border-zinc-700 transition-colors">
+                <div className="text-[10px] uppercase">
+                  <span className="text-[#ff00ff] mr-4">{ev.date}</span>
+                  <span className="opacity-50">{ev.locationName}</span>
+                </div>
+                <button onClick={() => startEdit(ev)} className="text-white hover:text-[#ff00ff] text-[10px] uppercase font-bold">
+                  [Edit]
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* TRIBE DATABASE SECTION */}
@@ -221,9 +251,6 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
-          {members.length === 0 && !loading && (
-            <div className="py-20 text-center opacity-30 italic">No transmissions found in the archive.</div>
-          )}
         </div>
       </div>
     </div>
