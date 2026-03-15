@@ -35,7 +35,7 @@ export default function RitualPage() {
     <div className="min-h-screen bg-black text-white font-mono p-8 md:p-24">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-2">
-          RITUALS
+          RITUALS_V2
         </h1>
         <div className="h-[1px] w-full bg-zinc-800 mb-12"></div>
 
