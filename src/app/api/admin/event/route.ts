@@ -3,24 +3,20 @@ import { cookies } from 'next/headers';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-/**
- * GET: Fetches all events from the database.
- * This is used by both the Admin panel and the Homepage.
- */
+// 1. PUBLIC GET: This allows your Ritual page to see the data
 export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db("natitude");
+    // Fetch all events and sort by date
     const events = await db.collection("events").find({}).sort({ date: 1 }).toArray();
-    return NextResponse.json(events); // NO COOKIE CHECK HERE
+    return NextResponse.json(events);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-/**
- * POST: Handles both Creating NEW events and Editing EXISTING ones.
- */
+// 2. SECURE POST: Only works if you are logged in as Admin
 export async function POST(req: Request) {
   const cookieStore = await cookies();
   const session = cookieStore.get('admin_session');
@@ -36,22 +32,13 @@ export async function POST(req: Request) {
     const db = client.db("natitude");
 
     if (id) {
-      // MODE: EDIT EXISTING
-      // Updates the specific document that matches the ID
+      // UPDATE EXISTING
       await db.collection("events").updateOne(
         { _id: new ObjectId(id) },
-        { 
-          $set: { 
-            date, 
-            time, 
-            locationName, 
-            updatedAt: new Date() 
-          } 
-        }
+        { $set: { date, time, locationName, updatedAt: new Date() } }
       );
     } else {
-      // MODE: CREATE NEW
-      // Inserts a brand new document into the collection
+      // CREATE NEW
       await db.collection("events").insertOne({
         date,
         time,
@@ -62,7 +49,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("EVENT_OPERATION_ERROR:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
