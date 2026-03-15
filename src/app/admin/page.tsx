@@ -10,7 +10,7 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [members, setMembers] = useState([]);
-  const [allEvents, setAllEvents] = useState([]); // List of all events
+const [allEvents, setAllEvents] = useState<any[]>([]); // List of all events
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
