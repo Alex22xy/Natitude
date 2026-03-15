@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 
 // This is the "Nuclear Option" to stop Next.js from caching
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+
 
 export default function RitualPage() {
   const [events, setEvents] = useState<any[]>([]);
