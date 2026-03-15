@@ -2,10 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-/**
- * NATITUDE RITUAL LIST
- * Public-facing schedule that pulls live from MongoDB.
- */
 export default function RitualPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,13 +9,17 @@ export default function RitualPage() {
   useEffect(() => {
     const getRituals = async () => {
       try {
+        // We use the absolute path to ensure it hits your API
         const res = await fetch('/api/admin/event');
         if (res.ok) {
           const data = await res.json();
+          console.log("Data received from API:", data); // Check your browser console!
           setEvents(Array.isArray(data) ? data : []);
+        } else {
+          console.error("API response was not OK");
         }
       } catch (err) {
-        console.error("Failed to load rituals:", err);
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -27,6 +27,10 @@ export default function RitualPage() {
 
     getRituals();
   }, []);
+
+  if (loading) {
+    return <div className="min-h-screen bg-black text-[#ff00ff] flex items-center justify-center font-mono uppercase tracking-widest">Scanning_Frequencies...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white font-mono p-8 md:p-24">
@@ -52,20 +56,18 @@ export default function RitualPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-zinc-500 text-xs mb-2 text-right md:text-right">TIME_WINDOW:</p>
+                    <p className="text-zinc-500 text-[10px] mb-2 uppercase">Time_Window:</p>
                     <p className="text-white text-lg">{event.time}</p>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            !loading && (
-              <div className="text-center py-20 border border-dashed border-zinc-800">
-                <p className="text-zinc-600 uppercase text-xs tracking-widest">
-                  No rituals currently detected in this sector.
-                </p>
-              </div>
-            )
+            <div className="text-center py-20 border border-dashed border-zinc-900">
+              <p className="text-zinc-600 uppercase text-xs tracking-widest">
+                No rituals currently detected.
+              </p>
+            </div>
           )}
         </div>
       </div>

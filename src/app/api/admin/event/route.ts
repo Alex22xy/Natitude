@@ -11,16 +11,10 @@ export async function GET() {
   try {
     const client = await clientPromise;
     const db = client.db("natitude");
-    
-    // Fetch all events, sorted by date (earliest first)
-    const events = await db.collection("events")
-      .find({})
-      .sort({ date: 1 })
-      .toArray();
-
-    return NextResponse.json(events);
+    const events = await db.collection("events").find({}).sort({ date: 1 }).toArray();
+    return NextResponse.json(events); // NO COOKIE CHECK HERE
   } catch (error: any) {
-    return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
